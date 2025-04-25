@@ -84,18 +84,21 @@ class _CadastroScreenState extends State<CadastroScreen> {
 
         final userId = credential.user?.uid;
 
-        await FirebaseFirestore.instance
-            .collection('usuarios')
-            .doc(userId)
-            .set({
-              'nome': _nomeController.text.trim(),
-              'email': _emailController.text.trim(),
-              'celular': _celularController.text.trim(),
-              'genero': _genero,
-              'dataNascimento': _dataNascimento?.toIso8601String(),
-              'avatarUrl': _avatarUrl,
-              'criadoEm': FieldValue.serverTimestamp(),
-            });
+        await FirebaseFirestore.instance.collection('usuarios').doc(userId).set(
+          {
+            'nome': _nomeController.text.trim(),
+            'email': _emailController.text.trim(),
+            'celular': _celularController.text.trim(),
+            'genero': _genero,
+            'dataNascimento': _dataNascimento?.toIso8601String(),
+            'avatarUrl': _avatarUrl,
+            'criadoEm': FieldValue.serverTimestamp(),
+            'pesquisa': [
+              ..._nomeController.text.trim().toLowerCase().split(' '),
+              _emailController.text.trim().toLowerCase(),
+            ],
+          },
+        );
 
         Navigator.pushReplacementNamed(context, '/home');
       } catch (e) {

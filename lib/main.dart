@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:meu_caderninho/screens/esqueci_senha_screen.dart';
+import 'package:meu_caderninho/screens/grupo_list_screen.dart';
 import 'package:meu_caderninho/screens/perfil_screen.dart';
 import 'package:meu_caderninho/screens/wrapper_screen.dart';
 
@@ -38,28 +39,27 @@ class MeuCaderninhoApp extends StatelessWidget {
       title: 'Meu Caderninho',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-  scaffoldBackgroundColor: Colors.white,
-  primaryColor: const Color(0xFF1B1B54), // Azul escuro
-  colorScheme: ColorScheme.fromSwatch().copyWith(
-    primary: const Color(0xFF1B1B54),
-    secondary: const Color(0xFFF9A825), // Amarelo
-  ),
-  appBarTheme: const AppBarTheme(
-    backgroundColor: Color(0xFF1B1B54),
-    foregroundColor: Colors.white,
-  ),
-  elevatedButtonTheme: ElevatedButtonThemeData(
-    style: ElevatedButton.styleFrom(
-      backgroundColor: const Color(0xFF1B1B54),
-      foregroundColor: Colors.white,
-      textStyle: const TextStyle(fontWeight: FontWeight.bold),
-      minimumSize: const Size(double.infinity, 48),
-    ),
-  ),
-  inputDecorationTheme: const InputDecorationTheme(
-    border: OutlineInputBorder(),
-  ),
-),
+        useMaterial3: true, // 🆕 ATIVA Material 3!
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF1B1B54), // Azul escuro que você já usa
+        ),
+        scaffoldBackgroundColor: Colors.white,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF1B1B54),
+          foregroundColor: Colors.white,
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF1B1B54),
+            foregroundColor: Colors.white,
+            textStyle: const TextStyle(fontWeight: FontWeight.bold),
+            minimumSize: const Size(double.infinity, 48),
+          ),
+        ),
+        inputDecorationTheme: const InputDecorationTheme(
+          border: OutlineInputBorder(),
+        ),
+      ),
 
       routes: {
         '/': (context) => const WrapperScreen(), // ✅ agora ele decide
@@ -67,6 +67,7 @@ class MeuCaderninhoApp extends StatelessWidget {
         '/home': (context) => const HomeScreen(),
         '/esqueci-senha': (context) => const EsqueciSenhaScreen(),
         '/perfil': (context) => const PerfilScreen(),
+        '/lista-grupo': (context) => const GrupoListScreen(),
       },
     );
   }

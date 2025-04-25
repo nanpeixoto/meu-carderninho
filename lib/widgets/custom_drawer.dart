@@ -49,6 +49,15 @@ class CustomDrawer extends StatelessWidget {
                   Navigator.pushNamed(context, '/perfil');
                 },
               ),
+
+              ListTile(
+                leading: const Icon(Icons.person),
+                title: const Text('Meus Grupos'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, '/lista-grupo');
+                },
+              ),
               ListTile(
                 leading: const Icon(Icons.settings),
                 title: const Text('Configurações'),
