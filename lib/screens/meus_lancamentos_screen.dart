@@ -132,6 +132,10 @@ class _MeusLancamentosScreenState extends State<MeusLancamentosScreen> {
                               value: 'Pago',
                               child: Text('Pago'),
                             ),
+                            DropdownMenuItem(
+                              value: 'Aguardando Aprovação',
+                              child: Text('Aguardando Aprovação'),
+                            ),
                           ],
                           onChanged: (value) {
                             setState(() {
@@ -418,8 +422,8 @@ class _MeusLancamentosScreenState extends State<MeusLancamentosScreen> {
                                                 const SizedBox(height: 16),
                                                 Center(
                                                   child: ElevatedButton(
-                                                    onPressed: () {
-                                                      Navigator.push(
+                                                    onPressed: () async {
+                                                      await Navigator.push(
                                                         context,
                                                         MaterialPageRoute(
                                                           builder:
@@ -431,9 +435,11 @@ class _MeusLancamentosScreenState extends State<MeusLancamentosScreen> {
                                                                 valor:
                                                                     valor
                                                                         .toDouble(),
+                                                                docId: docId,
                                                               ),
                                                         ),
                                                       );
+                                                      _carregarLancamentos(); // <- Força a tela recarregar os dados após retornar
                                                     },
                                                     style: ElevatedButton.styleFrom(
                                                       backgroundColor:

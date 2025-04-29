@@ -1,14 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class InformarPagamentoScreen extends StatelessWidget {
   final String destinatarioNome;
   final double valor;
+  final String docId;
 
   const InformarPagamentoScreen({
     super.key,
     required this.destinatarioNome,
     required this.valor,
+    required this.docId,
   });
+
+  Future<void> _enviarParaAprovacao(BuildContext context) async {
+    final snapshot =
+        await FirebaseFirestore.instance.collectionGroup('gastos').get();
+
+    for (var doc in snapshot.docs) {
+      if (doc.id == docId) {
+        await doc.reference.update({'status': 'Aguardando Aprovação'});
+        break;
+      }
+    }
+
+    if (context.mounted) Navigator.pop(context);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +50,10 @@ class InformarPagamentoScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            const Text('Observações'),
+            const Text(
+              'Observações',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
             TextField(
               decoration: InputDecoration(
@@ -47,7 +67,10 @@ class InformarPagamentoScreen extends StatelessWidget {
               maxLines: 3,
             ),
             const SizedBox(height: 24),
-            const Text('Comprovante'),
+            const Text(
+              'Comprovante',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
             GestureDetector(
               onTap: () {
@@ -75,11 +98,9 @@ class InformarPagamentoScreen extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  // TODO: salvar pagamento
-                },
+                onPressed: () => _enviarParaAprovacao(context),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
+                  backgroundColor: const Color(0xFF1A237E),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(

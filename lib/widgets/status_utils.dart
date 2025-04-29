@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+ 
 Color backgroundStatusColor(String status) {
   switch (status.toLowerCase()) {
     case 'aprovado':
@@ -8,12 +8,16 @@ Color backgroundStatusColor(String status) {
       return Colors.red.shade50;
     case 'pago':
       return Colors.blue.shade50;
+    case 'aguardando aprovação':
+    case 'aguardando aprovação pagamento':
+      return Colors.orange.shade50;
     case 'pendente':
     default:
-      return Colors.orange.shade50;
+      return Colors.grey.shade200;
   }
 }
-
+ 
+ 
 Color textStatusColor(String status) {
   switch (status.toLowerCase()) {
     case 'aprovado':
@@ -22,12 +26,15 @@ Color textStatusColor(String status) {
       return Colors.red;
     case 'pago':
       return Colors.blue;
+    case 'aguardando aprovação':
+    case 'aguardando aprovação pagamento':
+      return Colors.orange;
     case 'pendente':
     default:
-      return Colors.orange;
+      return Colors.grey;
   }
 }
-
+ 
 IconData iconeStatus(String status) {
   switch (status.toLowerCase()) {
     case 'aprovado':
@@ -36,13 +43,31 @@ IconData iconeStatus(String status) {
       return Icons.cancel;
     case 'pago':
       return Icons.attach_money;
+    case 'aguardando aprovação':
+    case 'aguardando aprovação pagamento':
+      return Icons.hourglass_top;
     case 'pendente':
     default:
-      return Icons.hourglass_top;
+      return Icons.help_outline;
   }
 }
-
+ 
 String formatarStatus(String status) {
-  if (status.isEmpty) return '';
-  return status[0].toUpperCase() + status.substring(1).toLowerCase();
+  switch (status.toLowerCase()) {
+    case 'aprovado':
+      return 'Aprovado';
+    case 'rejeitado':
+      return 'Rejeitado';
+    case 'pago':
+      return 'Pago';
+    case 'aguardando aprovação':
+      return 'Aguardando Aprovação';
+    case 'aguardando aprovação pagamento':
+      return 'Aguardando Pagamento';
+    case 'pendente':
+    default:
+      return 'Pendente';
+  }
 }
+ 
+ 
