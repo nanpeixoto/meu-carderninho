@@ -3,22 +3,21 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:meu_caderninho/widgets/status_utils.dart';
 
-
 class MeusLancamentosScreen extends StatefulWidget {
   const MeusLancamentosScreen({super.key});
 
-  @override  
-  State<MeusLancamentosScreen> createState() => _MeusLancamentosScreenState();  
+  @override
+  State<MeusLancamentosScreen> createState() => _MeusLancamentosScreenState();
 }
 
 class _MeusLancamentosScreenState extends State<MeusLancamentosScreen> {
   List<QueryDocumentSnapshot> _docs = [];
   bool _carregando = true;
-  
+
   String _filtroStatus = 'Todos'; // <- Adicione isso no topo do State
 
   @override
-  void initState() {    
+  void initState() {
     super.initState();
     _carregarLancamentos();
   }
@@ -342,36 +341,47 @@ class _MeusLancamentosScreenState extends State<MeusLancamentosScreen> {
                                             ],
                                           )
                                         else
-                                           Align(
-  alignment: Alignment.centerRight,
-  child: Container(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-    decoration: BoxDecoration(
-      color: backgroundStatusColor(status),
-      borderRadius: BorderRadius.circular(16),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          iconeStatus(status),
-          color: textStatusColor(status),
-          size: 16,
-        ),
-        const SizedBox(width: 4),
-        Text(
-          formatarStatus(status),
-          style: TextStyle(
-            color: textStatusColor(status),
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-          ),
-        ),
-      ],
-    ),
-  ),
-),
-
+                                          Align(
+                                            alignment: Alignment.centerRight,
+                                            child: Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 12,
+                                                    vertical: 6,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: backgroundStatusColor(
+                                                  status,
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(16),
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(
+                                                    iconeStatus(status),
+                                                    color: textStatusColor(
+                                                      status,
+                                                    ),
+                                                    size: 16,
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                  Text(
+                                                    formatarStatus(status),
+                                                    style: TextStyle(
+                                                      color: textStatusColor(
+                                                        status,
+                                                      ),
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 14,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
                                       ],
                                     ),
                                   ),
