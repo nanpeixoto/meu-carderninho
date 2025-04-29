@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:meu_caderninho/screens/informar_pagamento_screen.dart';
 import 'package:meu_caderninho/widgets/status_utils.dart';
 
 class MeusLancamentosScreen extends StatefulWidget {
@@ -341,46 +342,129 @@ class _MeusLancamentosScreenState extends State<MeusLancamentosScreen> {
                                             ],
                                           )
                                         else
-                                          Align(
-                                            alignment: Alignment.centerRight,
-                                            child: Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 12,
-                                                    vertical: 6,
-                                                  ),
-                                              decoration: BoxDecoration(
-                                                color: backgroundStatusColor(
-                                                  status,
-                                                ),
-                                                borderRadius:
-                                                    BorderRadius.circular(16),
-                                              ),
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Icon(
-                                                    iconeStatus(status),
-                                                    color: textStatusColor(
-                                                      status,
-                                                    ),
-                                                    size: 16,
-                                                  ),
-                                                  const SizedBox(width: 4),
-                                                  Text(
-                                                    formatarStatus(status),
-                                                    style: TextStyle(
-                                                      color: textStatusColor(
-                                                        status,
+                                          Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.center,
+                                            children: [
+                                              Align(
+                                                alignment:
+                                                    Alignment.centerRight,
+                                                child: Container(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 12,
+                                                        vertical: 6,
                                                       ),
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      fontSize: 14,
+                                                  decoration: BoxDecoration(
+                                                    color:
+                                                        status == 'Aprovado'
+                                                            ? Colors
+                                                                .green
+                                                                .shade50
+                                                            : status ==
+                                                                'Rejeitado'
+                                                            ? Colors.red.shade50
+                                                            : Colors
+                                                                .grey
+                                                                .shade200,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          16,
+                                                        ),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      Icon(
+                                                        status == 'Aprovado'
+                                                            ? Icons.check_circle
+                                                            : status ==
+                                                                'Rejeitado'
+                                                            ? Icons.cancel
+                                                            : Icons.info,
+                                                        color:
+                                                            status == 'Aprovado'
+                                                                ? Colors.green
+                                                                : status ==
+                                                                    'Rejeitado'
+                                                                ? Colors.red
+                                                                : Colors.grey,
+                                                        size: 16,
+                                                      ),
+                                                      const SizedBox(width: 4),
+                                                      Text(
+                                                        status,
+                                                        style: TextStyle(
+                                                          color:
+                                                              status ==
+                                                                      'Aprovado'
+                                                                  ? Colors.green
+                                                                  : status ==
+                                                                      'Rejeitado'
+                                                                  ? Colors.red
+                                                                  : Colors
+                                                                      .black,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: 14,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                              if (status == 'Aprovado') ...[
+                                                const SizedBox(height: 16),
+                                                Center(
+                                                  child: ElevatedButton(
+                                                    onPressed: () {
+                                                      Navigator.push(
+                                                        context,
+                                                        MaterialPageRoute(
+                                                          builder:
+                                                              (
+                                                                _,
+                                                              ) => InformarPagamentoScreen(
+                                                                destinatarioNome:
+                                                                    nome,
+                                                                valor:
+                                                                    valor
+                                                                        .toDouble(),
+                                                              ),
+                                                        ),
+                                                      );
+                                                    },
+                                                    style: ElevatedButton.styleFrom(
+                                                      backgroundColor:
+                                                          const Color(
+                                                            0xFF1A237E,
+                                                          ),
+                                                      foregroundColor:
+                                                          Colors.white,
+                                                      padding:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 24,
+                                                            vertical: 12,
+                                                          ),
+                                                      shape: RoundedRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              24,
+                                                            ),
+                                                      ),
+                                                    ),
+                                                    child: const Text(
+                                                      'INFORMAR PAGAMENTO',
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
                                                     ),
                                                   ),
-                                                ],
-                                              ),
-                                            ),
+                                                ),
+                                              ],
+                                            ],
                                           ),
                                       ],
                                     ),
