@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:meu_caderninho/screens/novo_gasto_screen.dart';
 import 'editar_grupo_screen.dart';
+import 'package:meu_caderninho/widgets/status_utils.dart';
+
 
 class GrupoDetalhesScreen extends StatefulWidget {
   final String grupoId;
@@ -25,6 +27,7 @@ String? _categoriaSelecionada;
   
   String _nomeGrupo = '';
   List<String> _participantes = [];
+  String? _usuarioNome;
    
   
 
@@ -34,8 +37,23 @@ String? _categoriaSelecionada;
   void initState() {
     super.initState();
     _carregarGrupo();
+      _carregarUsuarioAtual();
+
     _innerTabController = TabController(length: 3, vsync: this);
   }
+
+  Future<void> _carregarUsuarioAtual() async {
+  final uid = FirebaseAuth.instance.currentUser?.uid;
+  if (uid == null) return;
+
+  final doc = await FirebaseFirestore.instance.collection('usuarios').doc(uid).get();
+  if (doc.exists) {
+    setState(() {
+      _usuarioNome = doc['nome'] ?? '';
+    });
+  }
+}
+
 
   Future<void> _carregarGrupo() async {
     final doc =
@@ -143,6 +161,20 @@ String? _categoriaSelecionada;
       ),
     );
   }
+
+  Color _corStatus(String status) {
+  switch (status.toLowerCase()) {
+    case 'aprovado':
+      return Colors.green;
+    case 'rejeitado':
+      return Colors.red;
+    case 'pago':
+      return Colors.blue;
+    case 'pendente':
+    default:
+      return Colors.orange;
+  }
+}
 
 Widget _buildDashboardTab() {
   return SingleChildScrollView(
@@ -359,8 +391,11 @@ final nome = dados['nome'] ?? '';
 final valor = dados['valor'] ?? 0.0;
 final categoriaNome = dados['categoria'] ?? 'Outros';
 final int? iconeCategoriaCodePoint = dados['iconeCategoria'];
+final status  = dados['status'] ?? 'Pendente';
+
 print('iconeCategoriaCodePoint');
 print(gasto.data());
+
 
  
 
@@ -402,7 +437,35 @@ if (iconeCategoriaCodePoint != null) {
                             if (!snapshot.hasData) return const Text('Carregando...');
                             final usuarios = snapshot.data!.docs;
                             final nomes = usuarios.map((u) => u['nome'] ?? '').join(', ');
-                            return Text('R\$ ${valor.toStringAsFixed(2)}\n$nomes');
+                           return Align(
+  alignment: Alignment.centerLeft,
+  child: Container(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+    decoration: BoxDecoration(
+      color: backgroundStatusColor(status),
+      borderRadius: BorderRadius.circular(16),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          iconeStatus(status),
+          color: textStatusColor(status),
+          size: 16,
+        ),
+        const SizedBox(width: 4),
+        Text(
+          formatarStatus(status),
+          style: TextStyle(
+            color: textStatusColor(status),
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ),
+        ),
+      ],
+    ),
+  ),
+);
                           },
     ),
   ],
@@ -679,6 +742,8 @@ if (iconeCategoriaCodePoint != null) {
     print('Erro ao buscar ícone da categoria: $e');
   }
 
+  
+
   await FirebaseFirestore.instance
       .collection('grupos')
       .doc(widget.grupoId)
@@ -691,7 +756,8 @@ if (iconeCategoriaCodePoint != null) {
     'divididoEntre': participantesSelecionados,
     'data': Timestamp.fromDate(_dataSelecionada!),
     'criadoEm': FieldValue.serverTimestamp(),
-     'status': 'Pendente'
+     'status': 'Pendente',
+      'lancadoPor': _usuarioNome
   });
 
   setState(() => _isLoading = false);
