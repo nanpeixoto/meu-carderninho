@@ -691,6 +691,7 @@ if (iconeCategoriaCodePoint != null) {
     'divididoEntre': participantesSelecionados,
     'data': Timestamp.fromDate(_dataSelecionada!),
     'criadoEm': FieldValue.serverTimestamp(),
+     'status': 'Pendente'
   });
 
   setState(() => _isLoading = false);
