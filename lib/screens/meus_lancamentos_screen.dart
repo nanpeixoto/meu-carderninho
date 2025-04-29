@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:meu_caderninho/widgets/status_utils.dart';
+
 
 class MeusLancamentosScreen extends StatefulWidget {
   const MeusLancamentosScreen({super.key});
@@ -340,52 +342,36 @@ class _MeusLancamentosScreenState extends State<MeusLancamentosScreen> {
                                             ],
                                           )
                                         else
-                                          Align(
-                                            alignment: Alignment.centerRight,
-                                            child: Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 12,
-                                                    vertical: 6,
-                                                  ),
-                                              decoration: BoxDecoration(
-                                                color:
-                                                    status == 'Aprovado'
-                                                        ? Colors.green.shade50
-                                                        : Colors.red.shade50,
-                                                borderRadius:
-                                                    BorderRadius.circular(16),
-                                              ),
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Icon(
-                                                    status == 'Aprovado'
-                                                        ? Icons.check_circle
-                                                        : Icons.cancel,
-                                                    color:
-                                                        status == 'Aprovado'
-                                                            ? Colors.green
-                                                            : Colors.red,
-                                                    size: 16,
-                                                  ),
-                                                  const SizedBox(width: 4),
-                                                  Text(
-                                                    status,
-                                                    style: TextStyle(
-                                                      color:
-                                                          status == 'Aprovado'
-                                                              ? Colors.green
-                                                              : Colors.red,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      fontSize: 14,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
+                                           Align(
+  alignment: Alignment.centerRight,
+  child: Container(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+    decoration: BoxDecoration(
+      color: backgroundStatusColor(status),
+      borderRadius: BorderRadius.circular(16),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          iconeStatus(status),
+          color: textStatusColor(status),
+          size: 16,
+        ),
+        const SizedBox(width: 4),
+        Text(
+          formatarStatus(status),
+          style: TextStyle(
+            color: textStatusColor(status),
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ),
+        ),
+      ],
+    ),
+  ),
+),
+
                                       ],
                                     ),
                                   ),
