@@ -11,9 +11,10 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _senhaController = TextEditingController();
+  final _emailController = TextEditingController(text:"nanpeixoto@gmail.com");
+  final _senhaController = TextEditingController(text:"123456");
 
+ 
   Future<void> _fazerLogin() async {
     if (_formKey.currentState!.validate()) {
       try {

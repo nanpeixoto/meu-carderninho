@@ -19,7 +19,7 @@ class _GrupoListScreenState extends State<GrupoListScreen> with SingleTickerProv
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
   }
 
   @override
@@ -98,7 +98,7 @@ class _GrupoListScreenState extends State<GrupoListScreen> with SingleTickerProv
           tabs: const [
             Tab(text: 'Criados por Mim'),
             Tab(text: 'Participando'),
-            Tab(text: 'Convites'), // 🆕 Nova aba
+           // Tab(text: 'Convites'), // 🆕 Nova aba
           ],
         ),
       ),

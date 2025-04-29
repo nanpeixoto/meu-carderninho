@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:meu_caderninho/screens/categorias_screen.dart';
+import 'package:meu_caderninho/screens/grupo_screen.dart';
+import 'package:meu_caderninho/screens/categorias_screen.dart';
 
 class CustomDrawer extends StatelessWidget {
   const CustomDrawer({super.key});
@@ -58,6 +61,21 @@ class CustomDrawer extends StatelessWidget {
                   Navigator.pushNamed(context, '/lista-grupo');
                 },
               ),
+
+              ListTile(
+  leading: const Icon(Icons.category),
+  title: const Text('Categorias'),
+  onTap: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+       builder: (_) => CategoriasScreen(),
+      ),
+    );
+  },
+),
+
+
               ListTile(
                 leading: const Icon(Icons.settings),
                 title: const Text('Configurações'),
