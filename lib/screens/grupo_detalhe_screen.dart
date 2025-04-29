@@ -6,8 +6,6 @@ import 'editar_grupo_screen.dart';
 
 class GrupoDetalhesScreen extends StatefulWidget {
   final String grupoId;
-  
-  
 
   const GrupoDetalhesScreen({super.key, required this.grupoId});
 
@@ -21,12 +19,10 @@ class _GrupoDetalhesScreenState extends State<GrupoDetalhesScreen>
   final TextEditingController _emailController = TextEditingController();
   String? _filtroMembroId; // mover para o State da tela
   List<Map<String, dynamic>> _categorias = [];
-String? _categoriaSelecionada;
-  
+  String? _categoriaSelecionada;
+
   String _nomeGrupo = '';
   List<String> _participantes = [];
-   
-  
 
   late TabController _innerTabController;
 
@@ -144,581 +140,764 @@ String? _categoriaSelecionada;
     );
   }
 
-Widget _buildDashboardTab() {
-  return SingleChildScrollView(
-    padding: const EdgeInsets.all(16),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Total no mês
-        StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance
-              .collection('grupos')
-              .doc(widget.grupoId)
-              .collection('gastos')
-              .snapshots(),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-            final gastos = snapshot.data!.docs;
-            double total = gastos.fold(
-              0.0,
-              (acc, gasto) => acc + (gasto['valor'] ?? 0.0),
-            );
+  Widget _buildDashboardTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Total no mês
+          StreamBuilder<QuerySnapshot>(
+            stream:
+                FirebaseFirestore.instance
+                    .collection('grupos')
+                    .doc(widget.grupoId)
+                    .collection('gastos')
+                    .snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData)
+                return const Center(child: CircularProgressIndicator());
+              final gastos = snapshot.data!.docs;
+              double total = gastos.fold(
+                0.0,
+                (acc, gasto) => acc + (gasto['valor'] ?? 0.0),
+              );
 
-            return Card(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              color: const Color(0xFFFFF7D1),
-              elevation: 4,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Total no Grupo', style: TextStyle(color: Colors.black54)),
-                    const SizedBox(height: 4),
-                    Text('R\$ ${total.toStringAsFixed(2)}',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24)),
-                  ],
+              return Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
                 ),
-              ),
-            );
-          },
-        ),
-
-        const SizedBox(height: 24),
-
-        // Saldos por membro
-        const Text('Saldos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-        const SizedBox(height: 8),
-        StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance
-              .collection('grupos')
-              .doc(widget.grupoId)
-              .collection('gastos')
-              .snapshots(),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-
-            final gastos = snapshot.data!.docs;
-            if (gastos.isEmpty) return const Text('Nenhum saldo para mostrar.');
-
-            // Calcular saldos
-            final Map<String, double> saldos = {};
-            for (var gasto in gastos) {
-              final valorTotal = (gasto['valor'] ?? 0.0) as double;
-              final divididoEntre = List<String>.from(gasto['divididoEntre'] ?? []);
-              final valorPorPessoa = valorTotal / divididoEntre.length;
-
-              for (var participanteId in divididoEntre) {
-                saldos.update(
-                  participanteId,
-                  (valor) => valor + valorPorPessoa,
-                  ifAbsent: () => valorPorPessoa,
-                );
-              }
-            }
-
-            return StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance.collection('usuarios').snapshots(),
-              builder: (context, usuarioSnapshot) {
-                if (!usuarioSnapshot.hasData) return const SizedBox.shrink();
-
-                final usuarios = usuarioSnapshot.data!.docs;
-                final participantesComSaldo = usuarios.where((u) => _participantes.contains(u.id)).toList();
-
-                return Column(
-                  children: participantesComSaldo.map((usuario) {
-                    final id = usuario.id;
-                    final nome = usuario['nome'] ?? '';
-                    final avatarUrl = usuario['avatarUrl'];
-                    final saldo = saldos[id] ?? 0.0;
-
-                    return ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: avatarUrl != null
-                          ? CircleAvatar(backgroundImage: NetworkImage(avatarUrl))
-                          : CircleAvatar(child: Text(nome.isNotEmpty ? nome[0] : '?')),
-                      title: Text(nome),
-                      trailing: Text(
-                        'R\$ ${saldo.toStringAsFixed(2)}',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                color: const Color(0xFFFFF7D1),
+                elevation: 4,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Total no Grupo',
+                        style: TextStyle(color: Colors.black54),
                       ),
-                    );
-                  }).toList(),
-                );
-              },
-            );
-          },
-        ),
-
-        const SizedBox(height: 24),
-
-        // Filtro por membro
-        const Text('Filtrar por membro', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-        const SizedBox(height: 8),
-        StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance.collection('usuarios').snapshots(),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) return const SizedBox();
-            final usuarios = snapshot.data!.docs.where((u) => _participantes.contains(u.id)).toList();
-            return DropdownButtonFormField<String>(
-              value: _filtroMembroId,
-              hint: const Text('Todos os membros'),
-              isExpanded: true,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              ),
-              items: [
-                const DropdownMenuItem<String>(
-                  value: null,
-                  child: Text('Todos os membros'),
-                ),
-                ...usuarios.map((u) => DropdownMenuItem<String>(
-                  value: u.id,
-                  child: Text(u['nome'] ?? ''),
-                )),
-              ],
-              onChanged: (valor) {
-                setState(() {
-                  _filtroMembroId = valor;
-                });
-              },
-            );
-          },
-        ),
-
-        const SizedBox(height: 24),
-
-        // Botão Adicionar Gasto
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: () => _abrirModalNovoGasto(),
-            icon: const Icon(Icons.add),
-            label: const Text('Adicionar Gasto'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFFC727),
-              foregroundColor: Colors.black,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          ),
-        ),
-
-        const SizedBox(height: 24),
-
-        // Gastos Recentes agrupados por mês
-        const Text('Gastos Recentes', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-        const SizedBox(height: 8),
-        StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance
-              .collection('grupos')
-              .doc(widget.grupoId)
-              .collection('gastos')
-              .orderBy('data', descending: true)
-              .snapshots(),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-            final gastos = snapshot.data!.docs;
-            if (gastos.isEmpty) return const Text('Nenhum gasto registrado.');
-
-            final Map<String, List<QueryDocumentSnapshot>> gastosPorMes = {};
-
-            for (var gasto in gastos) {
-              final data = (gasto['data'] as Timestamp?)?.toDate();
-              if (data == null) continue;
-
-              final mesAno = '${data.month.toString().padLeft(2, '0')}/${data.year}';
-              gastosPorMes.putIfAbsent(mesAno, () => []).add(gasto);
-            }
-
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: gastosPorMes.entries.map((entry) {
-                final mesAno = entry.key;
-                final gastosDoMes = entry.value;
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: Text(
-                        mesAno,
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    ...gastosDoMes.where((gasto) {
-                      if (_filtroMembroId == null) return true;
-                      final divididoEntre = List<String>.from(gasto['divididoEntre'] ?? []);
-                      return divididoEntre.contains(_filtroMembroId);
-                    }).map((gasto) {
-                      
-                      final dados = gasto.data() as Map<String, dynamic>? ?? {};
-final nome = dados['nome'] ?? '';
-final valor = dados['valor'] ?? 0.0;
-final categoriaNome = dados['categoria'] ?? 'Outros';
-final int? iconeCategoriaCodePoint = dados['iconeCategoria'];
-print('iconeCategoriaCodePoint');
-print(gasto.data());
-
- 
-
-IconData categoriaIcone;
-if (iconeCategoriaCodePoint != null) {
-  categoriaIcone = IconData(iconeCategoriaCodePoint, fontFamily: 'MaterialIcons');
-  
-} else {
-  categoriaIcone = Icons.attach_money; // Ícone padrão
-}
-
-                      final divididoEntre = List<String>.from(gasto['divididoEntre'] ?? []);
-
-      
-
-                      return ListTile(
-                        contentPadding: EdgeInsets.zero,
-                       leading: CircleAvatar(
-  backgroundColor: Colors.amber.shade200,
-  child: Icon(categoriaIcone, color: Colors.black),
-),
-                        title: Text(nome),
-                        
-                        subtitle: 
-                        Column(
-  crossAxisAlignment: CrossAxisAlignment.start,
-  children: [
-    Text(
-      categoriaNome, // <- aqui você mostra a categoria
-      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-    ),
-    const SizedBox(height: 4),
-                        FutureBuilder<QuerySnapshot>(
-                          future: FirebaseFirestore.instance
-                              .collection('usuarios')
-                              .where(FieldPath.documentId, whereIn: divididoEntre)
-                              .get(),
-                          builder: (context, snapshot) {
-                            if (!snapshot.hasData) return const Text('Carregando...');
-                            final usuarios = snapshot.data!.docs;
-                            final nomes = usuarios.map((u) => u['nome'] ?? '').join(', ');
-                            return Text('R\$ ${valor.toStringAsFixed(2)}\n$nomes');
-                          },
-    ),
-  ],
-),
-                        trailing: PopupMenuButton<String>(
-                          onSelected: (value) {
-                            if (value == 'editar') {
-                              _editarGasto(gasto.id);
-                            } else if (value == 'excluir') {
-                              _excluirGasto(gasto.id);
-                            }
-                          },
-                          itemBuilder: (context) => const [
-                            PopupMenuItem(
-                              value: 'editar',
-                              child: Text('Editar'),
-                            ),
-                            PopupMenuItem(
-                              value: 'excluir',
-                              child: Text('Excluir'),
-                            ),
-                          ],
+                      const SizedBox(height: 4),
+                      Text(
+                        'R\$ ${total.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 24,
                         ),
-                      );
-                    }).toList(),
-                  ],
-                );
-              }).toList(),
-            );
-          },
-        ),
-      ],
-    ),
-  );
-}
-
-  
- void _abrirModalNovoGasto() {
-  final TextEditingController _nomeGastoController = TextEditingController();
-  final TextEditingController _valorGastoController = TextEditingController();
-  String _categoriaSelecionada = 'Outros';
-  DateTime? _dataSelecionada;
-  List<String> participantesSelecionados = [];
-  bool _isLoading = false;
-  int? iconeSelecionadoCodePoint;
-
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-    ),
-    builder: (context) {
-      return StatefulBuilder(
-        builder: (context, setState) {
-          return Padding(
-            padding: EdgeInsets.only(
-              left: 16,
-              right: 16,
-              top: 24,
-              bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Novo Gasto', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
-
-                  TextField(
-                    controller: _nomeGastoController,
-                    decoration: const InputDecoration(
-                      labelText: 'Nome do gasto',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  TextField(
-                    controller: _valorGastoController,
-                    keyboardType: TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(
-                      labelText: 'Valor (R\$)',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  InkWell(
-                    onTap: () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate: _dataSelecionada ?? DateTime.now(),
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime(2100),
-                      );
-                      if (picked != null) {
-                        setState(() {
-                          _dataSelecionada = picked;
-                        });
-                      }
-                    },
-                    child: InputDecorator(
-                      decoration: const InputDecoration(
-                        labelText: 'Data do gasto',
-                        border: OutlineInputBorder(),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            _dataSelecionada != null
-                                ? '${_dataSelecionada!.day}/${_dataSelecionada!.month}/${_dataSelecionada!.year}'
-                                : 'Selecionar data',
-                          ),
-                          const Icon(Icons.calendar_today, size: 20),
-                        ],
-                      ),
-                    ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-
-                  
-                  FutureBuilder<QuerySnapshot>(
-  future: FirebaseFirestore.instance
-      .collection('categorias')
-      .where('usuarioId', isEqualTo: FirebaseAuth.instance.currentUser!.uid)
-      .where('ativo', isEqualTo: true)
-      .get(),
-  builder: (context, snapshot) {
-    if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-
-    final categorias = snapshot.data!.docs;
-
-    if (categorias.isEmpty) {
-      return const Text('Nenhuma categoria cadastrada.');
-    }
-
-    // ⚡ Corrige seleção inicial
-    if (_categoriaSelecionada == null ||
-        !categorias.any((doc) => doc['nome'] == _categoriaSelecionada)) {
-      _categoriaSelecionada = categorias.first['nome'];
-    }
-
-    return DropdownButtonFormField<String>(
-      value: _categoriaSelecionada,
-      decoration: const InputDecoration(
-        labelText: 'Categoria',
-        border: OutlineInputBorder(),
-      ),
-      items: categorias.map((doc) {
-        final nomeCategoria = doc['nome'];
-        final iconeCategoria = doc['icone'];
-
-        return DropdownMenuItem<String>(
-          value: nomeCategoria,
-          child: Row(
-            children: [
-              Icon(
-                IconData(iconeCategoria, fontFamily: 'MaterialIcons'),
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(nomeCategoria),
-            ],
+                ),
+              );
+            },
           ),
-        );
-      }).toList(),
-      onChanged: (value) {
-  setState(() {
-    _categoriaSelecionada = value ?? 'Outros';
-    // Quando mudar a categoria, também buscar o icone correspondente:
-    final categoriaSelecionada = categorias.firstWhere((cat) => cat['nome'] == _categoriaSelecionada, orElse: () => throw Exception('Categoria não encontrada'));
-    if (categoriaSelecionada != null) {
-      iconeSelecionadoCodePoint = categoriaSelecionada['icone'];
-    } else {
-      iconeSelecionadoCodePoint = Icons.attach_money.codePoint; // Default
-    }
-  });
-},
-    );
-  },
-)
-,
-                  const SizedBox(height: 16),
 
-                  const Text('Dividir entre:', style: TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
+          const SizedBox(height: 24),
 
-                  SizedBox(
-                    height: 100,
-                    child: FutureBuilder<QuerySnapshot>(
-                      future: FirebaseFirestore.instance.collection('usuarios').get(),
-                      builder: (context, snapshot) {
-                        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-                        final usuarios = snapshot.data!.docs.where((doc) => _participantes.contains(doc.id)).toList();
+          // Saldos por membro
+          const Text(
+            'Saldos',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          ),
+          const SizedBox(height: 8),
+          StreamBuilder<QuerySnapshot>(
+            stream:
+                FirebaseFirestore.instance
+                    .collection('grupos')
+                    .doc(widget.grupoId)
+                    .collection('gastos')
+                    .snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData)
+                return const Center(child: CircularProgressIndicator());
 
-                        return ListView(
-                          scrollDirection: Axis.horizontal,
-                          children: usuarios.map((usuario) {
-                            final id = usuario.id;
-                            final nome = usuario['nome'] ?? '';
-                            final avatarUrl = usuario['avatarUrl'];
-                            final selecionado = participantesSelecionados.contains(id);
+              final gastos = snapshot.data!.docs;
+              if (gastos.isEmpty)
+                return const Text('Nenhum saldo para mostrar.');
 
-                            return GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  if (selecionado) {
-                                    participantesSelecionados.remove(id);
-                                  } else {
-                                    participantesSelecionados.add(id);
-                                  }
-                                });
-                              },
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 8),
-                                child: Column(
-                                  children: [
-                                    CircleAvatar(
-                                      radius: 28,
-                                      backgroundColor: selecionado ? Colors.blue.shade200 : Colors.grey.shade300,
-                                      backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
-                                      child: avatarUrl == null ? Text(nome.isNotEmpty ? nome[0] : '?') : null,
+              // Calcular saldos
+              final Map<String, double> saldos = {};
+              for (var gasto in gastos) {
+                final valorTotal = (gasto['valor'] ?? 0.0) as double;
+                final divididoEntre = List<String>.from(
+                  gasto['divididoEntre'] ?? [],
+                );
+                final valorPorPessoa = valorTotal / divididoEntre.length;
+
+                for (var participanteId in divididoEntre) {
+                  saldos.update(
+                    participanteId,
+                    (valor) => valor + valorPorPessoa,
+                    ifAbsent: () => valorPorPessoa,
+                  );
+                }
+              }
+
+              return StreamBuilder<QuerySnapshot>(
+                stream:
+                    FirebaseFirestore.instance
+                        .collection('usuarios')
+                        .snapshots(),
+                builder: (context, usuarioSnapshot) {
+                  if (!usuarioSnapshot.hasData) return const SizedBox.shrink();
+
+                  final usuarios = usuarioSnapshot.data!.docs;
+                  final participantesComSaldo =
+                      usuarios
+                          .where((u) => _participantes.contains(u.id))
+                          .toList();
+
+                  return Column(
+                    children:
+                        participantesComSaldo.map((usuario) {
+                          final id = usuario.id;
+                          final nome = usuario['nome'] ?? '';
+                          final avatarUrl = usuario['avatarUrl'];
+                          final saldo = saldos[id] ?? 0.0;
+
+                          return ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading:
+                                avatarUrl != null
+                                    ? CircleAvatar(
+                                      backgroundImage: NetworkImage(avatarUrl),
+                                    )
+                                    : CircleAvatar(
+                                      child: Text(
+                                        nome.isNotEmpty ? nome[0] : '?',
+                                      ),
                                     ),
-                                    const SizedBox(height: 4),
-                                    Text(nome, style: const TextStyle(fontSize: 12)),
-                                  ],
-                                ),
+                            title: Text(nome),
+                            trailing: Text(
+                              'R\$ ${saldo.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
                               ),
-                            );
-                          }).toList(),
-                        );
-                      },
-                    ),
+                            ),
+                          );
+                        }).toList(),
+                  );
+                },
+              );
+            },
+          ),
+
+          const SizedBox(height: 24),
+
+          // Filtro por membro
+          const Text(
+            'Filtrar por membro',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          ),
+          const SizedBox(height: 8),
+          StreamBuilder<QuerySnapshot>(
+            stream:
+                FirebaseFirestore.instance.collection('usuarios').snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) return const SizedBox();
+              final usuarios =
+                  snapshot.data!.docs
+                      .where((u) => _participantes.contains(u.id))
+                      .toList();
+              return DropdownButtonFormField<String>(
+                value: _filtroMembroId,
+                hint: const Text('Todos os membros'),
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
                   ),
-
-                  const SizedBox(height: 24),
-
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onPressed: _isLoading ? null : () async {
-  final nomeGasto = _nomeGastoController.text.trim();
-  final valorGasto = double.tryParse(_valorGastoController.text.trim()) ?? 0.0;
-
-  if (nomeGasto.isEmpty || valorGasto <= 0 || _dataSelecionada == null || participantesSelecionados.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Preencha todos os campos obrigatórios.')),
-    );
-    return;
-  }
-
-  setState(() => _isLoading = true);
-
-  int? iconeSelecionadoCodePoint;
-
-  try {
-    final categoriasSnapshot = await FirebaseFirestore.instance
-        .collection('categorias')
-        .where('nome', isEqualTo: _categoriaSelecionada)
-        .get();
-
-    if (categoriasSnapshot.docs.isNotEmpty) {
-      final categoriaDoc = categoriasSnapshot.docs.first;
-      iconeSelecionadoCodePoint = categoriaDoc['icone']; // Busca o codePoint aqui
-    }
-  } catch (e) {
-    print('Erro ao buscar ícone da categoria: $e');
-  }
-
-  await FirebaseFirestore.instance
-      .collection('grupos')
-      .doc(widget.grupoId)
-      .collection('gastos')
-      .add({
-    'nome': nomeGasto,
-    'valor': valorGasto,
-    'categoria': _categoriaSelecionada,
-    'iconeCategoria': iconeSelecionadoCodePoint, // Agora salva também o icone correto
-    'divididoEntre': participantesSelecionados,
-    'data': Timestamp.fromDate(_dataSelecionada!),
-    'criadoEm': FieldValue.serverTimestamp(),
-  });
-
-  setState(() => _isLoading = false);
-
-  if (context.mounted) {
-    Navigator.of(context).pop();
-  }
-},
-
-                      child: _isLoading
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                            )
-                          : const Text('Salvar Gasto'),
+                ),
+                items: [
+                  const DropdownMenuItem<String>(
+                    value: null,
+                    child: Text('Todos os membros'),
+                  ),
+                  ...usuarios.map(
+                    (u) => DropdownMenuItem<String>(
+                      value: u.id,
+                      child: Text(u['nome'] ?? ''),
                     ),
                   ),
                 ],
+                onChanged: (valor) {
+                  setState(() {
+                    _filtroMembroId = valor;
+                  });
+                },
+              );
+            },
+          ),
+
+          const SizedBox(height: 24),
+
+          // Botão Adicionar Gasto
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _abrirModalNovoGasto(),
+              icon: const Icon(Icons.add),
+              label: const Text('Adicionar Gasto'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFFC727),
+                foregroundColor: Colors.black,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
-          );
-        },
-      );
-    },
-  );
-}
+          ),
 
+          const SizedBox(height: 24),
+
+          // Gastos Recentes agrupados por mês
+          const Text(
+            'Gastos Recentes',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          ),
+          const SizedBox(height: 8),
+          StreamBuilder<QuerySnapshot>(
+            stream:
+                FirebaseFirestore.instance
+                    .collection('grupos')
+                    .doc(widget.grupoId)
+                    .collection('gastos')
+                    .orderBy('data', descending: true)
+                    .snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData)
+                return const Center(child: CircularProgressIndicator());
+              final gastos = snapshot.data!.docs;
+              if (gastos.isEmpty) return const Text('Nenhum gasto registrado.');
+
+              final Map<String, List<QueryDocumentSnapshot>> gastosPorMes = {};
+
+              for (var gasto in gastos) {
+                final data = (gasto['data'] as Timestamp?)?.toDate();
+                if (data == null) continue;
+
+                final mesAno =
+                    '${data.month.toString().padLeft(2, '0')}/${data.year}';
+                gastosPorMes.putIfAbsent(mesAno, () => []).add(gasto);
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children:
+                    gastosPorMes.entries.map((entry) {
+                      final mesAno = entry.key;
+                      final gastosDoMes = entry.value;
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            child: Text(
+                              mesAno,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          ...gastosDoMes
+                              .where((gasto) {
+                                if (_filtroMembroId == null) return true;
+                                final divididoEntre = List<String>.from(
+                                  gasto['divididoEntre'] ?? [],
+                                );
+                                return divididoEntre.contains(_filtroMembroId);
+                              })
+                              .map((gasto) {
+                                final dados =
+                                    gasto.data() as Map<String, dynamic>? ?? {};
+                                final nome = dados['nome'] ?? '';
+                                final valor = dados['valor'] ?? 0.0;
+                                final categoriaNome =
+                                    dados['categoria'] ?? 'Outros';
+                                final int? iconeCategoriaCodePoint =
+                                    dados['iconeCategoria'];
+                                print('iconeCategoriaCodePoint');
+                                print(gasto.data());
+
+                                IconData categoriaIcone;
+                                if (iconeCategoriaCodePoint != null) {
+                                  categoriaIcone = IconData(
+                                    iconeCategoriaCodePoint,
+                                    fontFamily: 'MaterialIcons',
+                                  );
+                                } else {
+                                  categoriaIcone =
+                                      Icons.attach_money; // Ícone padrão
+                                }
+
+                                final divididoEntre = List<String>.from(
+                                  gasto['divididoEntre'] ?? [],
+                                );
+
+                                return ListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  leading: CircleAvatar(
+                                    backgroundColor: Colors.amber.shade200,
+                                    child: Icon(
+                                      categoriaIcone,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                  title: Text(nome),
+
+                                  subtitle: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        categoriaNome, // <- aqui você mostra a categoria
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      FutureBuilder<QuerySnapshot>(
+                                        future:
+                                            FirebaseFirestore.instance
+                                                .collection('usuarios')
+                                                .where(
+                                                  FieldPath.documentId,
+                                                  whereIn: divididoEntre,
+                                                )
+                                                .get(),
+                                        builder: (context, snapshot) {
+                                          if (!snapshot.hasData)
+                                            return const Text('Carregando...');
+                                          final usuarios = snapshot.data!.docs;
+                                          final nomes = usuarios
+                                              .map((u) => u['nome'] ?? '')
+                                              .join(', ');
+                                          return Text(
+                                            'R\$ ${valor.toStringAsFixed(2)}\n$nomes',
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                  trailing: PopupMenuButton<String>(
+                                    onSelected: (value) {
+                                      if (value == 'editar') {
+                                        _editarGasto(gasto.id);
+                                      } else if (value == 'excluir') {
+                                        _excluirGasto(gasto.id);
+                                      }
+                                    },
+                                    itemBuilder:
+                                        (context) => const [
+                                          PopupMenuItem(
+                                            value: 'editar',
+                                            child: Text('Editar'),
+                                          ),
+                                          PopupMenuItem(
+                                            value: 'excluir',
+                                            child: Text('Excluir'),
+                                          ),
+                                        ],
+                                  ),
+                                );
+                              })
+                              .toList(),
+                        ],
+                      );
+                    }).toList(),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _abrirModalNovoGasto() {
+    final TextEditingController _nomeGastoController = TextEditingController();
+    final TextEditingController _valorGastoController = TextEditingController();
+    String _categoriaSelecionada = 'Outros';
+    DateTime? _dataSelecionada;
+    List<String> participantesSelecionados = [];
+    bool _isLoading = false;
+    int? iconeSelecionadoCodePoint;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 24,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Novo Gasto',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    TextField(
+                      controller: _nomeGastoController,
+                      decoration: const InputDecoration(
+                        labelText: 'Nome do gasto',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    TextField(
+                      controller: _valorGastoController,
+                      keyboardType: TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: 'Valor (R\$)',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    InkWell(
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: _dataSelecionada ?? DateTime.now(),
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                        );
+                        if (picked != null) {
+                          setState(() {
+                            _dataSelecionada = picked;
+                          });
+                        }
+                      },
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          labelText: 'Data do gasto',
+                          border: OutlineInputBorder(),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              _dataSelecionada != null
+                                  ? '${_dataSelecionada!.day}/${_dataSelecionada!.month}/${_dataSelecionada!.year}'
+                                  : 'Selecionar data',
+                            ),
+                            const Icon(Icons.calendar_today, size: 20),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    FutureBuilder<QuerySnapshot>(
+                      future:
+                          FirebaseFirestore.instance
+                              .collection('categorias')
+                              .where(
+                                'usuarioId',
+                                isEqualTo:
+                                    FirebaseAuth.instance.currentUser!.uid,
+                              )
+                              .where('ativo', isEqualTo: true)
+                              .get(),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData)
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+
+                        final categorias = snapshot.data!.docs;
+
+                        if (categorias.isEmpty) {
+                          return const Text('Nenhuma categoria cadastrada.');
+                        }
+
+                        // ⚡ Corrige seleção inicial
+                        if (_categoriaSelecionada == null ||
+                            !categorias.any(
+                              (doc) => doc['nome'] == _categoriaSelecionada,
+                            )) {
+                          _categoriaSelecionada = categorias.first['nome'];
+                        }
+
+                        return DropdownButtonFormField<String>(
+                          value: _categoriaSelecionada,
+                          decoration: const InputDecoration(
+                            labelText: 'Categoria',
+                            border: OutlineInputBorder(),
+                          ),
+                          items:
+                              categorias.map((doc) {
+                                final nomeCategoria = doc['nome'];
+                                final iconeCategoria = doc['icone'];
+
+                                return DropdownMenuItem<String>(
+                                  value: nomeCategoria,
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        IconData(
+                                          iconeCategoria,
+                                          fontFamily: 'MaterialIcons',
+                                        ),
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(nomeCategoria),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              _categoriaSelecionada = value ?? 'Outros';
+                              // Quando mudar a categoria, também buscar o icone correspondente:
+                              final categoriaSelecionada = categorias
+                                  .firstWhere(
+                                    (cat) =>
+                                        cat['nome'] == _categoriaSelecionada,
+                                    orElse:
+                                        () =>
+                                            throw Exception(
+                                              'Categoria não encontrada',
+                                            ),
+                                  );
+                              if (categoriaSelecionada != null) {
+                                iconeSelecionadoCodePoint =
+                                    categoriaSelecionada['icone'];
+                              } else {
+                                iconeSelecionadoCodePoint =
+                                    Icons.attach_money.codePoint; // Default
+                              }
+                            });
+                          },
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    const Text(
+                      'Dividir entre:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+
+                    SizedBox(
+                      height: 100,
+                      child: FutureBuilder<QuerySnapshot>(
+                        future:
+                            FirebaseFirestore.instance
+                                .collection('usuarios')
+                                .get(),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData)
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
+                          final usuarios =
+                              snapshot.data!.docs
+                                  .where(
+                                    (doc) => _participantes.contains(doc.id),
+                                  )
+                                  .toList();
+
+                          return ListView(
+                            scrollDirection: Axis.horizontal,
+                            children:
+                                usuarios.map((usuario) {
+                                  final id = usuario.id;
+                                  final nome = usuario['nome'] ?? '';
+                                  final avatarUrl = usuario['avatarUrl'];
+                                  final selecionado = participantesSelecionados
+                                      .contains(id);
+
+                                  return GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        if (selecionado) {
+                                          participantesSelecionados.remove(id);
+                                        } else {
+                                          participantesSelecionados.add(id);
+                                        }
+                                      });
+                                    },
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                      ),
+                                      child: Column(
+                                        children: [
+                                          CircleAvatar(
+                                            radius: 28,
+                                            backgroundColor:
+                                                selecionado
+                                                    ? Colors.blue.shade200
+                                                    : Colors.grey.shade300,
+                                            backgroundImage:
+                                                avatarUrl != null
+                                                    ? NetworkImage(avatarUrl)
+                                                    : null,
+                                            child:
+                                                avatarUrl == null
+                                                    ? Text(
+                                                      nome.isNotEmpty
+                                                          ? nome[0]
+                                                          : '?',
+                                                    )
+                                                    : null,
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            nome,
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                          );
+                        },
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed:
+                            _isLoading
+                                ? null
+                                : () async {
+                                  final nomeGasto =
+                                      _nomeGastoController.text.trim();
+                                  final valorGasto =
+                                      double.tryParse(
+                                        _valorGastoController.text.trim(),
+                                      ) ??
+                                      0.0;
+
+                                  if (nomeGasto.isEmpty ||
+                                      valorGasto <= 0 ||
+                                      _dataSelecionada == null ||
+                                      participantesSelecionados.isEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Preencha todos os campos obrigatórios.',
+                                        ),
+                                      ),
+                                    );
+                                    return;
+                                  }
+
+                                  setState(() => _isLoading = true);
+
+                                  int? iconeSelecionadoCodePoint;
+
+                                  try {
+                                    final categoriasSnapshot =
+                                        await FirebaseFirestore.instance
+                                            .collection('categorias')
+                                            .where(
+                                              'nome',
+                                              isEqualTo: _categoriaSelecionada,
+                                            )
+                                            .get();
+
+                                    if (categoriasSnapshot.docs.isNotEmpty) {
+                                      final categoriaDoc =
+                                          categoriasSnapshot.docs.first;
+                                      iconeSelecionadoCodePoint =
+                                          categoriaDoc['icone']; // Busca o codePoint aqui
+                                    }
+                                  } catch (e) {
+                                    print(
+                                      'Erro ao buscar ícone da categoria: $e',
+                                    );
+                                  }
+
+                                  await FirebaseFirestore.instance
+                                      .collection('grupos')
+                                      .doc(widget.grupoId)
+                                      .collection('gastos')
+                                      .add({
+                                        'nome': nomeGasto,
+                                        'valor': valorGasto,
+                                        'categoria': _categoriaSelecionada,
+                                        'iconeCategoria':
+                                            iconeSelecionadoCodePoint, // Agora salva também o icone correto
+                                        'divididoEntre':
+                                            participantesSelecionados,
+                                        'data': Timestamp.fromDate(
+                                          _dataSelecionada!,
+                                        ),
+                                        'criadoEm':
+                                            FieldValue.serverTimestamp(),
+                                      });
+
+                                  setState(() => _isLoading = false);
+
+                                  if (context.mounted) {
+                                    Navigator.of(context).pop();
+                                  }
+                                },
+
+                        child:
+                            _isLoading
+                                ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                                : const Text('Salvar Gasto'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 
   void _editarGasto(String gastoId) async {
     // Aqui você pode abrir uma nova tela ou mostrar um diálogo de edição
