@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:meu_caderninho/screens/esqueci_senha_screen.dart';
 import 'package:meu_caderninho/screens/grupo_list_screen.dart';
+import 'package:meu_caderninho/screens/meus_lancamentos_screen.dart';
 import 'package:meu_caderninho/screens/perfil_screen.dart';
 import 'package:meu_caderninho/screens/wrapper_screen.dart';
 
@@ -68,6 +69,7 @@ class MeuCaderninhoApp extends StatelessWidget {
         '/esqueci-senha': (context) => const EsqueciSenhaScreen(),
         '/perfil': (context) => const PerfilScreen(),
         '/lista-grupo': (context) => const GrupoListScreen(),
+        '/meus-lancamentos': (context) => const MeusLancamentosScreen(),
       },
     );
   }

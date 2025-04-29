@@ -61,20 +61,25 @@ class CustomDrawer extends StatelessWidget {
                   Navigator.pushNamed(context, '/lista-grupo');
                 },
               ),
+              ListTile(
+                leading: const Icon(Icons.receipt_long),
+                title: const Text('Meus Lançamentos'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, '/meus-lancamentos');
+                },
+              ),
 
               ListTile(
-  leading: const Icon(Icons.category),
-  title: const Text('Categorias'),
-  onTap: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-       builder: (_) => CategoriasScreen(),
-      ),
-    );
-  },
-),
-
+                leading: const Icon(Icons.category),
+                title: const Text('Categorias'),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => CategoriasScreen()),
+                  );
+                },
+              ),
 
               ListTile(
                 leading: const Icon(Icons.settings),
