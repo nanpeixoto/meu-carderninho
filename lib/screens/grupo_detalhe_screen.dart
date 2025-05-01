@@ -3,8 +3,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:meu_caderninho/screens/novo_gasto_screen.dart';
 import 'editar_grupo_screen.dart';
-import 'package:meu_caderninho/widgets/status_utils.dart';
+import 'package:meu_caderninho/utils/status_utils.dart';
 import 'package:meu_caderninho/screens/editar_gasto_screen.dart';
+import 'package:meu_caderninho/utils/pdf_saldos_util.dart';
+import 'package:intl/intl.dart';
 
 class GrupoDetalhesScreen extends StatefulWidget {
   final String grupoId;
@@ -28,6 +30,10 @@ class _GrupoDetalhesScreenState extends State<GrupoDetalhesScreen>
   String? _usuarioNome;
 
   late TabController _innerTabController;
+  final NumberFormat _formatter = NumberFormat.currency(
+    locale: 'pt_BR',
+    symbol: 'R\$',
+  );
 
   @override
   void initState() {
@@ -158,6 +164,51 @@ class _GrupoDetalhesScreenState extends State<GrupoDetalhesScreen>
     );
   }
 
+  Widget _buildCardResumo(
+    String label,
+    double valor,
+    Color bgColor,
+    Color textColor,
+    IconData icon,
+  ) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: bgColor,
+      elevation: 4,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(icon, color: textColor, size: 28),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: textColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'R\$ ${valor.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    color: textColor,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildDashboardTab() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -175,49 +226,88 @@ class _GrupoDetalhesScreenState extends State<GrupoDetalhesScreen>
             builder: (context, snapshot) {
               if (!snapshot.hasData)
                 return const Center(child: CircularProgressIndicator());
-              final gastos = snapshot.data!.docs;
-              double total = gastos.fold(
-                0.0,
-                (acc, gasto) => acc + (gasto['valor'] ?? 0.0),
-              );
 
-              return Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                color: const Color(0xFFFFF7D1),
-                elevation: 4,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Total no Grupo',
-                        style: TextStyle(color: Colors.black54),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'R\$ ${total.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 24,
-                        ),
-                      ),
-                    ],
+              final gastos = snapshot.data!.docs;
+
+              double total = 0.0;
+              double totalPago = 0.0;
+              double totalPendente = 0.0;
+
+              for (var gasto in gastos) {
+                final valor = (gasto['valor'] ?? 0.0) as double;
+                total += valor;
+
+                final status = gasto['status'] ?? 'Pendente';
+                if (status == 'Pago') {
+                  totalPago += valor;
+                } else {
+                  totalPendente += valor;
+                }
+              }
+
+              return Row(
+                children: [
+                  Expanded(
+                    child: _buildCardResumo(
+                      'Total no Grupo',
+                      total,
+                      const Color(0xFFFFF7D1),
+                      Colors.black87,
+                      Icons.account_balance_wallet_outlined,
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildCardResumo(
+                      'Total Pago',
+                      totalPago,
+                      Colors.green.shade50,
+                      Colors.green.shade800,
+                      Icons.check_circle_outline,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildCardResumo(
+                      'A Pagar',
+                      totalPendente,
+                      Colors.red.shade50,
+                      Colors.red.shade800,
+                      Icons.warning_amber_outlined,
+                    ),
+                  ),
+                ],
               );
             },
           ),
 
           const SizedBox(height: 24),
 
-          // Saldos por membro
-          const Text(
-            'Saldos',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Saldos',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+                IconButton(
+                  onPressed:
+                      () => PdfSaldosUtil.gerarPdfSaldos(
+                        widget.grupoId,
+                        _nomeGrupo,
+                      ),
+                  icon: const Icon(
+                    Icons.picture_as_pdf,
+                    color: Colors.blueAccent,
+                  ),
+                  tooltip: 'Exportar Saldos',
+                ),
+              ],
+            ),
           ),
+
           const SizedBox(height: 8),
           StreamBuilder<QuerySnapshot>(
             stream:
@@ -288,7 +378,7 @@ class _GrupoDetalhesScreenState extends State<GrupoDetalhesScreen>
                                     ),
                             title: Text(nome),
                             trailing: Text(
-                              'R\$ ${saldo.toStringAsFixed(2)}',
+                              _formatter.format(saldo),
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                               ),
@@ -396,7 +486,6 @@ class _GrupoDetalhesScreenState extends State<GrupoDetalhesScreen>
               for (var gasto in gastos) {
                 final data = (gasto['data'] as Timestamp?)?.toDate();
                 if (data == null) continue;
-
                 final mesAno =
                     '${data.month.toString().padLeft(2, '0')}/${data.year}';
                 gastosPorMes.putIfAbsent(mesAno, () => []).add(gasto);
@@ -409,195 +498,206 @@ class _GrupoDetalhesScreenState extends State<GrupoDetalhesScreen>
                       final mesAno = entry.key;
                       final gastosDoMes = entry.value;
 
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            child: Text(
-                              mesAno,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                      return ExpansionTile(
+                        title: Text(
+                          mesAno,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
                           ),
-                          ...gastosDoMes
-                              .where((gasto) {
-                                if (_filtroMembroId == null) return true;
-                                final divididoEntre = List<String>.from(
-                                  gasto['divididoEntre'] ?? [],
-                                );
-                                return divididoEntre.contains(_filtroMembroId);
-                              })
-                              .map((gasto) {
-                                final dados =
-                                    gasto.data() as Map<String, dynamic>? ?? {};
-                                final nome = dados['nome'] ?? '';
-                                final valor = dados['valor'] ?? 0.0;
-                                final categoriaNome =
-                                    dados['categoria'] ?? 'Outros';
-                                final int? iconeCategoriaCodePoint =
-                                    dados['iconeCategoria'];
-                                final status = dados['status'] ?? 'Pendente';
+                        ),
+                        initiallyExpanded:
+                            false, // <- agora vem fechado por padrão
 
-                                print('iconeCategoriaCodePoint');
-                                print(gasto.data());
-
-                                IconData categoriaIcone;
-                                if (iconeCategoriaCodePoint != null) {
-                                  categoriaIcone = IconData(
-                                    iconeCategoriaCodePoint,
-                                    fontFamily: 'MaterialIcons',
+                        children:
+                            gastosDoMes
+                                .where((gasto) {
+                                  if (_filtroMembroId == null) return true;
+                                  final divididoEntre = List<String>.from(
+                                    gasto['divididoEntre'] ?? [],
                                   );
-                                } else {
-                                  categoriaIcone =
-                                      Icons.attach_money; // Ícone padrão
-                                }
+                                  return divididoEntre.contains(
+                                    _filtroMembroId,
+                                  );
+                                })
+                                .map((gasto) {
+                                  final dados =
+                                      gasto.data() as Map<String, dynamic>? ??
+                                      {};
+                                  final nome = dados['nome'] ?? '';
+                                  final valor = dados['valor'] ?? 0.0;
+                                  final categoriaNome =
+                                      dados['categoria'] ?? 'Outros';
+                                  final int? iconeCategoriaCodePoint =
+                                      dados['iconeCategoria'];
+                                  final status = dados['status'] ?? 'Pendente';
 
-                                final divididoEntre = List<String>.from(
-                                  gasto['divididoEntre'] ?? [],
-                                );
+                                  print('iconeCategoriaCodePoint');
+                                  print(gasto.data());
 
-                                return ListTile(
-                                  contentPadding: EdgeInsets.zero,
-                                  leading: CircleAvatar(
-                                    backgroundColor: Colors.amber.shade200,
-                                    child: Icon(
-                                      categoriaIcone,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                  title: Text(nome),
+                                  IconData categoriaIcone;
+                                  if (iconeCategoriaCodePoint != null) {
+                                    categoriaIcone = IconData(
+                                      iconeCategoriaCodePoint,
+                                      fontFamily: 'MaterialIcons',
+                                    );
+                                  } else {
+                                    categoriaIcone =
+                                        Icons.attach_money; // Ícone padrão
+                                  }
 
-                                  subtitle: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        categoriaNome, // <- aqui você mostra a categoria
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                        ),
+                                  final divididoEntre = List<String>.from(
+                                    gasto['divididoEntre'] ?? [],
+                                  );
+
+                                  return ListTile(
+                                    contentPadding: EdgeInsets.zero,
+                                    leading: CircleAvatar(
+                                      backgroundColor: Colors.amber.shade200,
+                                      child: Icon(
+                                        categoriaIcone,
+                                        color: Colors.black,
                                       ),
-                                      const SizedBox(height: 4),
-                                      FutureBuilder<QuerySnapshot>(
-                                        future:
-                                            FirebaseFirestore.instance
-                                                .collection('usuarios')
-                                                .where(
-                                                  FieldPath.documentId,
-                                                  whereIn: divididoEntre,
-                                                )
-                                                .get(),
-                                        builder: (context, snapshot) {
-                                          if (!snapshot.hasData)
-                                            return const Text('Carregando...');
-                                          final usuarios = snapshot.data!.docs;
-                                          final nomes = usuarios
-                                              .map((u) => u['nome'] ?? '')
-                                              .join(', ');
-                                          return Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                'R\$ ${valor.toStringAsFixed(2)}',
-                                              ),
-                                              Text(nomes),
-                                              const SizedBox(height: 4),
-                                              Align(
-                                                alignment: Alignment.centerLeft,
-                                                child: Container(
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                        horizontal: 12,
-                                                        vertical: 6,
-                                                      ),
-                                                  decoration: BoxDecoration(
-                                                    color:
-                                                        backgroundStatusColor(
-                                                          status,
+                                    ),
+                                    title: Text(nome),
+
+                                    subtitle: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          categoriaNome, // <- aqui você mostra a categoria
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        FutureBuilder<QuerySnapshot>(
+                                          future:
+                                              FirebaseFirestore.instance
+                                                  .collection('usuarios')
+                                                  .where(
+                                                    FieldPath.documentId,
+                                                    whereIn: divididoEntre,
+                                                  )
+                                                  .get(),
+                                          builder: (context, snapshot) {
+                                            if (!snapshot.hasData)
+                                              return const Text(
+                                                'Carregando...',
+                                              );
+                                            final usuarios =
+                                                snapshot.data!.docs;
+                                            final nomes = usuarios
+                                                .map((u) => u['nome'] ?? '')
+                                                .join(', ');
+                                            return Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  'R\$ ${valor.toStringAsFixed(2)}',
+                                                ),
+                                                Text(nomes),
+                                                const SizedBox(height: 4),
+                                                Align(
+                                                  alignment:
+                                                      Alignment.centerLeft,
+                                                  child: Container(
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal: 12,
+                                                          vertical: 6,
                                                         ),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          16,
-                                                        ),
-                                                  ),
-                                                  child: Row(
-                                                    mainAxisSize:
-                                                        MainAxisSize.min,
-                                                    children: [
-                                                      Icon(
-                                                        iconeStatus(status),
-                                                        color: textStatusColor(
-                                                          status,
-                                                        ),
-                                                        size: 16,
-                                                      ),
-                                                      const SizedBox(width: 4),
-                                                      Text(
-                                                        formatarStatus(status),
-                                                        style: TextStyle(
+                                                    decoration: BoxDecoration(
+                                                      color:
+                                                          backgroundStatusColor(
+                                                            status,
+                                                          ),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            16,
+                                                          ),
+                                                    ),
+                                                    child: Row(
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
+                                                      children: [
+                                                        Icon(
+                                                          iconeStatus(status),
                                                           color:
                                                               textStatusColor(
                                                                 status,
                                                               ),
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          fontSize: 14,
+                                                          size: 16,
                                                         ),
-                                                      ),
-                                                    ],
+                                                        const SizedBox(
+                                                          width: 4,
+                                                        ),
+                                                        Text(
+                                                          formatarStatus(
+                                                            status,
+                                                          ),
+                                                          style: TextStyle(
+                                                            color:
+                                                                textStatusColor(
+                                                                  status,
+                                                                ),
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                            fontSize: 14,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
                                                   ),
                                                 ),
-                                              ),
-                                            ],
-                                          );
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                  trailing: PopupMenuButton<String>(
-                                    onSelected: (value) async {
-                                      if (value == 'editar') {
-                                        final resultado = await Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder:
-                                                (_) => EditarGastoScreen(
-                                                  gasto: gasto,
+                                              ],
+                                            );
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                    trailing: PopupMenuButton<String>(
+                                      onSelected: (value) async {
+                                        if (value == 'editar') {
+                                          final resultado =
+                                              await Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder:
+                                                      (_) => EditarGastoScreen(
+                                                        gasto: gasto,
+                                                      ),
                                                 ),
-                                          ),
-                                        );
+                                              );
 
-                                        if (resultado == true) {
-                                          setState(
-                                            () {},
-                                          ); // Força atualização se foi salvo
+                                          if (resultado == true) {
+                                            setState(
+                                              () {},
+                                            ); // Força atualização se foi salvo
+                                          }
+                                        } else if (value == 'excluir') {
+                                          _excluirGasto(gasto.id);
                                         }
-                                      } else if (value == 'excluir') {
-                                        _excluirGasto(gasto.id);
-                                      }
-                                    },
+                                      },
 
-                                    itemBuilder:
-                                        (context) => const [
-                                          PopupMenuItem(
-                                            value: 'editar',
-                                            child: Text('Editar'),
-                                          ),
-                                          PopupMenuItem(
-                                            value: 'excluir',
-                                            child: Text('Excluir'),
-                                          ),
-                                        ],
-                                  ),
-                                );
-                              })
-                              .toList(),
-                        ],
+                                      itemBuilder:
+                                          (context) => const [
+                                            PopupMenuItem(
+                                              value: 'editar',
+                                              child: Text('Editar'),
+                                            ),
+                                            PopupMenuItem(
+                                              value: 'excluir',
+                                              child: Text('Excluir'),
+                                            ),
+                                          ],
+                                    ),
+                                  );
+                                })
+                                .toList(),
                       );
                     }).toList(),
               );
