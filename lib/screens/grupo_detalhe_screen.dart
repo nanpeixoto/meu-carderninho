@@ -249,7 +249,7 @@ class _GrupoDetalhesScreenState extends State<GrupoDetalhesScreen>
                 children: [
                   Expanded(
                     child: _buildCardResumo(
-                      'Total no Grupo',
+                      'Total',
                       total,
                       const Color(0xFFFFF7D1),
                       Colors.black87,
@@ -259,7 +259,7 @@ class _GrupoDetalhesScreenState extends State<GrupoDetalhesScreen>
                   const SizedBox(width: 8),
                   Expanded(
                     child: _buildCardResumo(
-                      'Total Pago',
+                      'Pago',
                       totalPago,
                       Colors.green.shade50,
                       Colors.green.shade800,
@@ -461,14 +461,14 @@ class _GrupoDetalhesScreenState extends State<GrupoDetalhesScreen>
 
           const SizedBox(height: 24),
 
-          // Gastos Recentes agrupados por mês
-          const Text(
-            'Gastos Recentes',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-          ),
-          const SizedBox(height: 8),
-          StreamBuilder<QuerySnapshot>(
-             stream: FirebaseFirestore.instance
+// Gastos Recentes agrupados por mês
+const Text(
+  'Gastos Recentes',
+  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+),
+const SizedBox(height: 8),
+StreamBuilder<QuerySnapshot>(
+  stream: FirebaseFirestore.instance
       .collection('grupos')
       .doc(widget.grupoId)
       .collection('gastos')
@@ -487,220 +487,172 @@ class _GrupoDetalhesScreenState extends State<GrupoDetalhesScreen>
       final mesAno = '${data.month.toString().padLeft(2, '0')}/${data.year}';
       gastosPorMes.putIfAbsent(mesAno, () => []).add(gasto);
     }
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children:
-                    gastosPorMes.entries.map((entry) {
-                      final mesAno = entry.key;
-                      final gastosDoMes = entry.value;
-                      final isMesAtual = mesAno == DateFormat('MM/yyyy').format(DateTime.now());
 
-                      return ExpansionTile(
-                        title: Text(
-                          mesAno,
-                          style: TextStyle(
-                            fontSize: 16,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: gastosPorMes.entries.map((entry) {
+        final mesAno = entry.key;
+        final gastosDoMes = entry.value;
+        final isMesAtual = mesAno == DateFormat('MM/yyyy').format(DateTime.now());
+
+        return Card(
+          elevation: 2,
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: ExpansionTile(
+            tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+            backgroundColor: Colors.grey.shade100,
+            initiallyExpanded: false,
+            leading: const Icon(Icons.calendar_month, color: Colors.deepPurple),
+            trailing: const Icon(Icons.expand_more, color: Colors.blueAccent),
+            title: Text(
+              mesAno,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: isMesAtual ? Colors.orange : Colors.black,
+              ),
+            ),
+            children: gastosDoMes
+                .where((gasto) {
+                  if (_filtroMembroId == null) return true;
+                  final divididoEntre = List<String>.from(
+                    gasto['divididoEntre'] ?? [],
+                  );
+                  return divididoEntre.contains(_filtroMembroId);
+                })
+                .map((gasto) {
+                  final dados = gasto.data() as Map<String, dynamic>? ?? {};
+                  final nome = dados['nome'] ?? '';
+                  final valor = dados['valor'] ?? 0.0;
+                  final categoriaNome = dados['categoria'] ?? 'Outros';
+                  final int? iconeCategoriaCodePoint = dados['iconeCategoria'];
+                  final status = dados['status'] ?? 'Pendente';
+
+                  IconData categoriaIcone;
+                  if (iconeCategoriaCodePoint != null) {
+                    categoriaIcone = IconData(
+                      iconeCategoriaCodePoint,
+                      fontFamily: 'MaterialIcons',
+                    );
+                  } else {
+                    categoriaIcone = Icons.attach_money;
+                  }
+
+                  final divididoEntre = List<String>.from(
+                    gasto['divididoEntre'] ?? [],
+                  );
+
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: CircleAvatar(
+                      backgroundColor: Colors.amber.shade200,
+                      child: Icon(
+                        categoriaIcone,
+                        color: Colors.black,
+                      ),
+                    ),
+                    title: Text(nome),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          categoriaNome,
+                          style: const TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: isMesAtual ? Colors.orange : Colors.black,
+                            fontSize: 14,
                           ),
                         ),
-                        initiallyExpanded:
-                            false, // <- agora vem fechado por padrão
-
-                        children:
-                            gastosDoMes
-                                .where((gasto) {
-                                  if (_filtroMembroId == null) return true;
-                                  final divididoEntre = List<String>.from(
-                                    gasto['divididoEntre'] ?? [],
-                                  );
-                                  return divididoEntre.contains(
-                                    _filtroMembroId,
-                                  );
-                                })
-                                .map((gasto) {
-                                  final dados =
-                                      gasto.data() as Map<String, dynamic>? ??
-                                      {};
-                                  final nome = dados['nome'] ?? '';
-                                  final valor = dados['valor'] ?? 0.0;
-                                  final categoriaNome =
-                                      dados['categoria'] ?? 'Outros';
-                                  final int? iconeCategoriaCodePoint =
-                                      dados['iconeCategoria'];
-                                  final status = dados['status'] ?? 'Pendente';
-
-                                  print('iconeCategoriaCodePoint');
-                                  print(gasto.data());
-
-                                  IconData categoriaIcone;
-                                  if (iconeCategoriaCodePoint != null) {
-                                    categoriaIcone = IconData(
-                                      iconeCategoriaCodePoint,
-                                      fontFamily: 'MaterialIcons',
-                                    );
-                                  } else {
-                                    categoriaIcone =
-                                        Icons.attach_money; // Ícone padrão
-                                  }
-
-                                  final divididoEntre = List<String>.from(
-                                    gasto['divididoEntre'] ?? [],
-                                  );
-
-                                  return ListTile(
-                                    contentPadding: EdgeInsets.zero,
-                                    leading: CircleAvatar(
-                                      backgroundColor: Colors.amber.shade200,
-                                      child: Icon(
-                                        categoriaIcone,
-                                        color: Colors.black,
-                                      ),
+                        const SizedBox(height: 4),
+                        FutureBuilder<QuerySnapshot>(
+                          future: FirebaseFirestore.instance
+                              .collection('usuarios')
+                              .where(FieldPath.documentId, whereIn: divididoEntre)
+                              .get(),
+                          builder: (context, snapshot) {
+                            if (!snapshot.hasData)
+                              return const Text('Carregando...');
+                            final usuarios = snapshot.data!.docs;
+                            final nomes = usuarios
+                                .map((u) => u['nome'] ?? '')
+                                .join(', ');
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('R\$ ${valor.toStringAsFixed(2)}'),
+                                Text(nomes),
+                                const SizedBox(height: 4),
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: backgroundStatusColor(status),
+                                      borderRadius: BorderRadius.circular(16),
                                     ),
-                                    title: Text(nome),
-
-                                    subtitle: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
                                       children: [
+                                        Icon(
+                                          iconeStatus(status),
+                                          color: textStatusColor(status),
+                                          size: 16,
+                                        ),
+                                        const SizedBox(width: 4),
                                         Text(
-                                          categoriaNome, // <- aqui você mostra a categoria
-                                          style: const TextStyle(
+                                          formatarStatus(status),
+                                          style: TextStyle(
+                                            color: textStatusColor(status),
                                             fontWeight: FontWeight.bold,
                                             fontSize: 14,
                                           ),
                                         ),
-                                        const SizedBox(height: 4),
-                                        FutureBuilder<QuerySnapshot>(
-                                          future:
-                                              FirebaseFirestore.instance
-                                                  .collection('usuarios')
-                                                  .where(
-                                                    FieldPath.documentId,
-                                                    whereIn: divididoEntre,
-                                                  )
-                                                  .get(),
-                                          builder: (context, snapshot) {
-                                            if (!snapshot.hasData)
-                                              return const Text(
-                                                'Carregando...',
-                                              );
-                                            final usuarios =
-                                                snapshot.data!.docs;
-                                            final nomes = usuarios
-                                                .map((u) => u['nome'] ?? '')
-                                                .join(', ');
-                                            return Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  'R\$ ${valor.toStringAsFixed(2)}',
-                                                ),
-                                                Text(nomes),
-                                                const SizedBox(height: 4),
-                                                Align(
-                                                  alignment:
-                                                      Alignment.centerLeft,
-                                                  child: Container(
-                                                    padding:
-                                                        const EdgeInsets.symmetric(
-                                                          horizontal: 12,
-                                                          vertical: 6,
-                                                        ),
-                                                    decoration: BoxDecoration(
-                                                      color:
-                                                          backgroundStatusColor(
-                                                            status,
-                                                          ),
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            16,
-                                                          ),
-                                                    ),
-                                                    child: Row(
-                                                      mainAxisSize:
-                                                          MainAxisSize.min,
-                                                      children: [
-                                                        Icon(
-                                                          iconeStatus(status),
-                                                          color:
-                                                              textStatusColor(
-                                                                status,
-                                                              ),
-                                                          size: 16,
-                                                        ),
-                                                        const SizedBox(
-                                                          width: 4,
-                                                        ),
-                                                        Text(
-                                                          formatarStatus(
-                                                            status,
-                                                          ),
-                                                          style: TextStyle(
-                                                            color:
-                                                                textStatusColor(
-                                                                  status,
-                                                                ),
-                                                            fontWeight:
-                                                                FontWeight.bold,
-                                                            fontSize: 14,
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            );
-                                          },
-                                        ),
                                       ],
                                     ),
-                                    trailing: PopupMenuButton<String>(
-                                      onSelected: (value) async {
-                                        if (value == 'editar') {
-                                          final resultado =
-                                              await Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder:
-                                                      (_) => EditarGastoScreen(
-                                                        gasto: gasto,
-                                                      ),
-                                                ),
-                                              );
-
-                                          if (resultado == true) {
-                                            setState(
-                                              () {},
-                                            ); // Força atualização se foi salvo
-                                          }
-                                        } else if (value == 'excluir') {
-                                          _excluirGasto(gasto.id);
-                                        }
-                                      },
-
-                                      itemBuilder:
-                                          (context) => const [
-                                            PopupMenuItem(
-                                              value: 'editar',
-                                              child: Text('Editar'),
-                                            ),
-                                            PopupMenuItem(
-                                              value: 'excluir',
-                                              child: Text('Excluir'),
-                                            ),
-                                          ],
-                                    ),
-                                  );
-                                })
-                                .toList(),
-                      );
-                    }).toList(),
-              );
-            },
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                    trailing: PopupMenuButton<String>(
+                      onSelected: (value) async {
+                        if (value == 'editar') {
+                          final resultado = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => EditarGastoScreen(gasto: gasto),
+                            ),
+                          );
+                          if (resultado == true) {
+                            setState(() {});
+                          }
+                        } else if (value == 'excluir') {
+                          _excluirGasto(gasto.id);
+                        }
+                      },
+                      itemBuilder: (context) => const [
+                        PopupMenuItem(
+                          value: 'editar',
+                          child: Text('Editar'),
+                        ),
+                        PopupMenuItem(
+                          value: 'excluir',
+                          child: Text('Excluir'),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
           ),
+        );
+      }).toList(),
+    );
+  },
+),
+
         ],
       ),
     );
