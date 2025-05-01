@@ -468,42 +468,40 @@ class _GrupoDetalhesScreenState extends State<GrupoDetalhesScreen>
           ),
           const SizedBox(height: 8),
           StreamBuilder<QuerySnapshot>(
-            stream:
-                FirebaseFirestore.instance
-                    .collection('grupos')
-                    .doc(widget.grupoId)
-                    .collection('gastos')
-                    .orderBy('data', descending: true)
-                    .snapshots(),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData)
-                return const Center(child: CircularProgressIndicator());
-              final gastos = snapshot.data!.docs;
-              if (gastos.isEmpty) return const Text('Nenhum gasto registrado.');
+             stream: FirebaseFirestore.instance
+      .collection('grupos')
+      .doc(widget.grupoId)
+      .collection('gastos')
+      .orderBy('data', descending: true)
+      .snapshots(),
+  builder: (context, snapshot) {
+    if (!snapshot.hasData)
+      return const Center(child: CircularProgressIndicator());
+    final gastos = snapshot.data!.docs;
+    if (gastos.isEmpty) return const Text('Nenhum gasto registrado.');
 
-              final Map<String, List<QueryDocumentSnapshot>> gastosPorMes = {};
-
-              for (var gasto in gastos) {
-                final data = (gasto['data'] as Timestamp?)?.toDate();
-                if (data == null) continue;
-                final mesAno =
-                    '${data.month.toString().padLeft(2, '0')}/${data.year}';
-                gastosPorMes.putIfAbsent(mesAno, () => []).add(gasto);
-              }
-
+    final Map<String, List<QueryDocumentSnapshot>> gastosPorMes = {};
+    for (var gasto in gastos) {
+      final data = (gasto['data'] as Timestamp?)?.toDate();
+      if (data == null) continue;
+      final mesAno = '${data.month.toString().padLeft(2, '0')}/${data.year}';
+      gastosPorMes.putIfAbsent(mesAno, () => []).add(gasto);
+    }
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children:
                     gastosPorMes.entries.map((entry) {
                       final mesAno = entry.key;
                       final gastosDoMes = entry.value;
+                      final isMesAtual = mesAno == DateFormat('MM/yyyy').format(DateTime.now());
 
                       return ExpansionTile(
                         title: Text(
                           mesAno,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
+                            color: isMesAtual ? Colors.orange : Colors.black,
                           ),
                         ),
                         initiallyExpanded:
